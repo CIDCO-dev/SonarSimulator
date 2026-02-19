@@ -1,19 +1,33 @@
-sudo apt install python3 python-is-python3 python3-pip -y
+#!/usr/bin/env bash
+set -euo pipefail
 
-sudo bash -c 'cat << EOF3 > /etc/systemd/system/nmea.service
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+sudo apt update
+sudo apt install -y python3 python3-pip python3-serial
+
+sudo tee /etc/systemd/system/nmea.service >/dev/null <<EOF
 [Unit]
 Description=Launch NMEA Simulator on boot.
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/ubuntu/SonarSimulator/Script/autolaunch.sh
+WorkingDirectory=${PROJECT_ROOT}
+Environment=SONAR_SERIAL_PORT=/dev/ttyUSB0
+Environment=SONAR_BAUD_RATE=9600
+Environment=SONAR_SENTENCE_TYPE=dpt
+ExecStart=${PROJECT_ROOT}/Script/autolaunch.sh
+Restart=always
+RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
-EOF3'
+EOF
 
-sudo chmod 755 /etc/systemd/system/nmea.service
+sudo chmod 644 /etc/systemd/system/nmea.service
+sudo systemctl daemon-reload
 sudo systemctl enable nmea
-sudo systemctl start nmea
-sudo systemctl status nmea
-
+sudo systemctl restart nmea
+sudo systemctl --no-pager --full status nmea

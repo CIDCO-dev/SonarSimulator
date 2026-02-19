@@ -1,1 +1,6 @@
-python3 -m unittest DPT_unittest.py
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}"
+python3 -m unittest -v sonar_simulator_unittest.py

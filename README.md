@@ -1,72 +1,82 @@
-# README for nmeaSIMULATOR.py
-## Sonar simulator NMEA-0183
+# SonarSimulator
 
+NMEA-0183 depth simulator for serial-connected systems.
 
+## Features
+- Generates `SDDPT` or `SDDBT` frames once per second by default.
+- Uses a deterministic depth pattern based on current second (`10 + second`).
+- Sends data over a serial port (`/dev/ttyUSB0` and `9600` by default).
+- Can run manually or as a `systemd` service (`nmea.service`).
 
-### foncitonnalities :
+## Repository Layout
+- `Script/sonar_simulator.py`: simulator entrypoint.
+- `Script/autolaunch.sh`: launcher used by systemd.
+- `Script/sonar_simulator_unittest.py`: unit tests.
+- `Script/unittest.sh`: test runner.
+- `Install/install.sh`: service installation script.
+- `BOM.txt`: hardware bill of materials.
 
-Generate nmea-0183 string of types  :  
-- Depth of water (SDDPT)
+## Requirements
+- Ubuntu (tested workflow targets Raspberry Pi with Ubuntu Server).
+- Python 3.
+- `pyserial` (`python3-serial` package).
 
-### HOW TO MAKE IT WORK AUTOMATICALLY: 
-    
-On a Raspberry pi : 
+## Manual Run
+From repository root:
 
-1. Install ubuntu server on as sdcard with the user ubuntu
+```bash
+python3 Script/sonar_simulator.py /dev/ttyUSB0 9600
+```
 
-2. Connect the usb serial adapter on the Raspberry
+Optional arguments:
 
-3. apply the power on the raspberry
+```bash
+python3 Script/sonar_simulator.py /dev/ttyUSB0 9600 --sentence-type dbt --interval 0.5 --iterations 10
+```
 
-4. validate if the serial adapter is detected by the OS
-    ls /dev/ttyU*
-	  you should see ttyUSB0
-   
-5. clone the repository in /home/ubuntu
+## Install as Service
+From repository root:
 
-6. Validate and modify the setting for the serial port and baudrate in the autolaunch.sh
-    nano /home/ubuntu/SonarSimulator/autolaunch.sh
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyUSB0 9600
-	  the 2 last argument are the serial port and the baudrate
-	  ex:
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyUSB1 9600
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyAMA0 115200
+```bash
+bash Install/install.sh
+```
 
-7. go in the install directory and run the installation script
-    cd /home/ubuntu/SonarSimulator/Install
-    ./install.sh
+This installs and starts `nmea.service` with default environment values:
+- `SONAR_SERIAL_PORT=/dev/ttyUSB0`
+- `SONAR_BAUD_RATE=9600`
+- `SONAR_SENTENCE_TYPE=dpt`
 
-The script is installed as a service. 
-If you do some modification in the autolaunch.sh file you have to relaunch the service. 
+Service commands:
+
+```bash
+sudo systemctl status nmea
 sudo systemctl restart nmea
+sudo systemctl stop nmea
+```
 
-to show the status of the service : sudo systemctl status nmea
-to start the service : sudo systemctl start nmea
-to stop the service : sudo systemctl stop nmea
+## Change Serial Port, Baud Rate, or Sentence Type
+Option 1 (recommended): override service environment values in the unit file.
 
-### HOW TO MAKE IT WORK MANUALLY: 
+```bash
+sudo systemctl edit --full nmea
+# Update SONAR_SERIAL_PORT, SONAR_BAUD_RATE, and SONAR_SENTENCE_TYPE (dpt or dbt)
+sudo systemctl daemon-reload
+sudo systemctl restart nmea
+```
 
-On a Raspberry pi : 
+Option 2: export environment values before running manually.
 
-1. Install ubuntu server on as sdcard with the user ubuntu
+```bash
+SONAR_SERIAL_PORT=/dev/ttyUSB1 SONAR_BAUD_RATE=115200 SONAR_SENTENCE_TYPE=dbt bash Script/autolaunch.sh
+```
 
-2. Connect the usb serial adapter on the Raspberry
+## Run Tests
+From repository root:
 
-3. apply the power on the raspberry
+```bash
+bash Script/unittest.sh
+```
 
-4. validate if the serial adapter is detected by the OS
-    ls /dev/ttyU*
-	  you should see ttyUSB0
-   
-5. clone the repository in /home/ubuntu
-
-6. Validate and modify the setting for the serial port and baudrate in the autolaunch.sh
-    nano /home/ubuntu/SonarSimulator/autolaunch.sh
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyUSB0 9600
-	  the 2 last argument are the serial port and the baudrate
-	  ex:
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyUSB1 9600
-	  python /home/ubuntu/SonarSimulator/Script/sonar_simulator_DPT.py /dev/ttyAMA0 115200
-	  
-7. Execute the script 
-	sudo ./home/ubuntu/SonarSimulator/autolaunch.sh
+## Notes
+- The simulator writes one frame per cycle terminated by `\r\n`.
+- If serial opening fails, the script logs the error and exits cleanly.
