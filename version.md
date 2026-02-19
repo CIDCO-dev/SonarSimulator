@@ -1,6 +1,7 @@
 # Version History (English)
 
 ## 2026-02-19
+- ci: added GitHub Actions workflow `.github/workflows/tests.yml` to run `bash Script/unittest.sh` on `push` and `pull_request` with Python 3.10, 3.11, and 3.12.
 - docs: rewrote `README.md` with accurate manual run, service install, configuration, and test instructions.
 - docs: added `agents.md` contributor/operator guide with validation and versioning policy.
 - versioning: added `VERSION` file to store current semantic version.
